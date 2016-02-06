@@ -5,9 +5,9 @@ import java.util.List;
 
 public class AvlTree<T> {
 
-	public Node<T> root;
-	public Comparator<T> cmp;
-	public int size;
+	private Node<T> root;
+	private Comparator<T> cmp;
+	private int size;
 
 	public AvlTree(Comparator<T> cmp) {
 		this.cmp = cmp;
@@ -27,12 +27,10 @@ public class AvlTree<T> {
 		if (null == root || cmp.compare(root.value, value) == 0) {
 			return root;
 		}
-
 		if (cmp.compare(root.value, value) < 0) {
 			return find(value, root.right);
-		} else {
-			return find(value, root.left);
 		}
+		return find(value, root.left);
 	}
 
 	public void traverse(Action<T> action) {
@@ -119,20 +117,17 @@ public class AvlTree<T> {
 			return true;
 		}
 		if (cmp.compare(root.value, value) > 0) {
-			if (delete(value, root.left)) {
-				assertBalanceFactor(root);
-				balanceIfNecessary(root);
-				return true;
+			if (!delete(value, root.left)) {
+				return false;
 			}
-			return false;
 		} else {
-			if (delete(value, root.right)) {
-				assertBalanceFactor(root);
-				balanceIfNecessary(root);
-				return true;
+			if (!delete(value, root.right)) {
+				return false;
 			}
-			return false;
 		}
+		assertBalanceFactor(root);
+		balanceIfNecessary(root);
+		return true;
 	}
 
 	private Node<T> getChild(Node<T> node) {
@@ -150,19 +145,19 @@ public class AvlTree<T> {
 	}
 
 	private void balanceIfNecessary(Node<T> node) {
-		if (node.balanceFactor == -2) {
-			if (null != node.right && node.right.balanceFactor == 1) {
+		if (node.balanceFactor == -2 && null != node.right) {
+			if (node.right.balanceFactor == 1) {
 				performRightLeftRotation(node);
 			}
-			if (null != node.right && node.right.balanceFactor == -1) {
+			if (node.right.balanceFactor == -1) {
 				performDoubleRightRotation(node);
 			}
 		}
-		if (node.balanceFactor == 2) {
-			if (null != node.left && node.left.balanceFactor == 1) {
+		if (node.balanceFactor == 2 && null != node.left) {
+			if (node.left.balanceFactor == 1) {
 				performDoubleLeftRotation(node);
 			}
-			if (null != node.left && node.left.balanceFactor == -1) {
+			if (node.left.balanceFactor == -1) {
 				performLeftRightRotation(node);
 			}
 		}
@@ -293,5 +288,9 @@ public class AvlTree<T> {
 			return 0;
 		}
 		return 1 + Math.max(findTreeHeight(node.left), findTreeHeight(node.right));
+	}
+
+	public int getSize() {
+		return size;
 	}
 }
