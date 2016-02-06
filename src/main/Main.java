@@ -1,6 +1,5 @@
 package main;
 
-import java.util.Arrays;
 import java.util.Comparator;
 
 import impl.Action;
@@ -17,13 +16,10 @@ public class Main {
 				return Integer.compare(o1, o2);
 			}
 		});
-		tree.insert(Arrays.asList(7, 6, 9, 5, 8, 10));
-		tree.delete(6);
-		tree.delete(7);
 		tree.traverse(new Action<Integer>() {
 			@Override
 			public void execute(Node<Integer> node) {
-				System.out.println(String.format("node: %s, factor: %s", node.value, node.balanceFactor));
+				System.out.println(String.format("node: %s, factor: %s", node.value, node.height));
 			}
 		});
 	}

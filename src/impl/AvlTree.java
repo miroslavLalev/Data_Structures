@@ -1,5 +1,7 @@
 package impl;
 
+import static java.lang.Math.max;
+
 import java.util.Comparator;
 import java.util.List;
 
@@ -73,6 +75,8 @@ public class AvlTree<T> {
 			if (null == root.left) {
 				root.left = new Node<T>(value);
 				root.left.parent = root;
+				root.height = max(getHeight(root.left), getHeight(root.right)) + 1;
+				assertBalanceFactor(root);
 				return;
 			}
 			insert(value, root.left);
@@ -80,12 +84,22 @@ public class AvlTree<T> {
 			if (null == root.right) {
 				root.right = new Node<T>(value);
 				root.right.parent = root;
+				root.height = max(getHeight(root.left), getHeight(root.right)) + 1;
+				assertBalanceFactor(root);
 				return;
 			}
 			insert(value, root.right);
 		}
+		root.height = max(getHeight(root.left), getHeight(root.right)) + 1;
 		assertBalanceFactor(root);
 		balanceIfNecessary(root);
+	}
+	
+	private int getHeight(Node<T> node) {
+		if (null == node) {
+			return 0;
+		}
+		return node.height;
 	}
 
 	public void delete(T value) {
@@ -109,10 +123,12 @@ public class AvlTree<T> {
 				} else {
 					parent.right = null;
 				}
+				parent.height = max(getHeight(parent.left), getHeight(parent.right)) + 1;
 				return true;
 			}
 			T tmp = findMin(getChild(root)).value;
 			delete(tmp, root);
+			root.height = max(getHeight(root.left), getHeight(root.right)) + 1;
 			root.value = tmp;
 			return true;
 		}
@@ -125,6 +141,7 @@ public class AvlTree<T> {
 				return false;
 			}
 		}
+		root.height = max(getHeight(root.left), getHeight(root.right)) + 1;
 		assertBalanceFactor(root);
 		balanceIfNecessary(root);
 		return true;
@@ -144,23 +161,28 @@ public class AvlTree<T> {
 		return findMin(root.left);
 	}
 
-	private void balanceIfNecessary(Node<T> node) {
+	private boolean balanceIfNecessary(Node<T> node) {
 		if (node.balanceFactor == -2 && null != node.right) {
 			if (node.right.balanceFactor == 1) {
 				performRightLeftRotation(node);
+				return true;
 			}
 			if (node.right.balanceFactor == -1) {
 				performDoubleRightRotation(node);
+				return true;
 			}
 		}
 		if (node.balanceFactor == 2 && null != node.left) {
 			if (node.left.balanceFactor == 1) {
 				performDoubleLeftRotation(node);
+				return true;
 			}
 			if (node.left.balanceFactor == -1) {
 				performLeftRightRotation(node);
+				return true;
 			}
 		}
+		return false;
 	}
 
 	private void performDoubleLeftRotation(Node<T> node) {
@@ -185,38 +207,13 @@ public class AvlTree<T> {
 		if (null != grandchildren) {
 			grandchildren.parent = node;
 		}
+		node.height = max(getHeight(node.left), getHeight(node.right)) + 1;
+		child.height = max(getHeight(child.left), getHeight(child.right)) + 1;
 	}
 
 	private void performLeftRightRotation(Node<T> node) {
-		Node<T> child = node.left;
-		Node<T> grandchildren = child.right;
-		Node<T> parent = node.parent;
-		Node<T> leftGrand = grandchildren.left;
-		Node<T> rightGrand = grandchildren.right;
-
-		if (null != parent) {
-			if (isLeftSubtree(node, parent)) {
-				parent.left = grandchildren;
-			} else {
-				parent.right = grandchildren;
-			}
-			grandchildren.parent = parent;
-		} else {
-			grandchildren.parent = null;
-			this.root = grandchildren;
-		}
-		grandchildren.left = child;
-		child.parent = grandchildren;
-		grandchildren.right = node;
-		node.parent = grandchildren;
-		node.left = leftGrand;
-		child.right = rightGrand;
-		if (null != leftGrand) {
-			leftGrand.parent = child;
-		}
-		if (null != rightGrand) {
-			rightGrand.parent = node;
-		}
+		performDoubleRightRotation(node.left);
+		performDoubleLeftRotation(node);
 	}
 
 	private void performDoubleRightRotation(Node<T> node) {
@@ -241,53 +238,27 @@ public class AvlTree<T> {
 		if (null != grandchildren) {
 			grandchildren.parent = node;
 		}
+		node.height = max(getHeight(node.left), getHeight(node.right)) + 1;
+		child.height = max(getHeight(child.left), getHeight(child.right)) + 1;
 	}
 
 	private void performRightLeftRotation(Node<T> node) {
-		Node<T> child = node.right;
-		Node<T> grandchildren = child.left;
-		Node<T> parent = node.parent;
-		Node<T> leftGrand = grandchildren.left;
-		Node<T> rightGrand = grandchildren.right;
-
-		if (null != parent) {
-			if (isLeftSubtree(node, parent)) {
-				parent.left = grandchildren;
-			} else {
-				parent.right = grandchildren;
-			}
-			grandchildren.parent = parent;
-		} else {
-			grandchildren.parent = null;
-			this.root = grandchildren;
-		}
-		grandchildren.left = node;
-		node.parent = grandchildren;
-		grandchildren.right = child;
-		child.parent = grandchildren;
-		child.left = leftGrand;
-		node.right = rightGrand;
-		if (null != leftGrand) {
-			leftGrand.parent = child;
-		}
-		if (null != rightGrand) {
-			rightGrand.parent = node;
-		}
+		performDoubleLeftRotation(node.right);
+		performDoubleRightRotation(node);
 	}
 
 	private boolean isLeftSubtree(Node<T> node, Node<T> parent) {
-		return parent.left.equals(node);
+		if (null != parent.left) {
+			return parent.left.equals(node);
+		}
+		return false;
 	}
 
 	private void assertBalanceFactor(Node<T> node) {
-		node.balanceFactor = findTreeHeight(node.left) - findTreeHeight(node.right);
-	}
-
-	private int findTreeHeight(Node<T> node) {
 		if (null == node) {
-			return 0;
+			return;
 		}
-		return 1 + Math.max(findTreeHeight(node.left), findTreeHeight(node.right));
+		node.balanceFactor = getHeight(node.left) - getHeight(node.right);
 	}
 
 	public int getSize() {
